@@ -1,9 +1,9 @@
 package com.suer.levelup.ui.screens
 
+import android.widget.Toast
 import android.view.MotionEvent
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -35,14 +35,18 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import androidx.compose.material.icons.rounded.*
+import com.suer.levelup.R
 import com.suer.levelup.data.model.Habit
 import com.suer.levelup.ui.viewmodel.AuthViewModel
 import com.suer.levelup.ui.viewmodel.HabitViewModel
@@ -54,7 +58,7 @@ import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.min
 
-// --- RENK PALETİ ---
+// --- COLOR PALETTE ---
 private val CreamBg = Color(0xFFFDFDF6)
 private val SurfaceWhite = Color(0xFFFFFFFF)
 private val PrimaryOrange = Color(0xFFFF6F61)
@@ -73,6 +77,7 @@ fun MainScreen(
     val userData by authViewModel.currentUserData.collectAsState()
     val habitList by habitViewModel.habitList.collectAsState()
     var selectedItem by remember { mutableIntStateOf(0) }
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         habitViewModel.fetchHabits()
@@ -85,36 +90,60 @@ fun MainScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             when (selectedItem) {
-                0 -> HomeContent(
-                    userData = userData,
-                    habitList = habitList,
-                    onNavigateToCreateHabit = onNavigateToCreateHabit,
-                    onProgressChange = { habit, newProgress ->
-                        // --- PUAN HİLESİ ENGELLEME MANTIĞI ---
-                        val wasCompleted = habit.progress >= 1f
-                        val isCompletedNow = newProgress >= 1f
-
-                        habitViewModel.updateHabitProgress(habit, newProgress)
-
-                        if (!wasCompleted && isCompletedNow) {
-                            // Tamamlanmamıştı, şimdi tamamlandı -> +10 Puan
-                            authViewModel.updateUserPoints(10)
-                        } else if (wasCompleted && !isCompletedNow) {
-                            // Tamamlanmıştı, geri alındı -> -10 Puan
-                            authViewModel.updateUserPoints(-10)
-                        }
-                    },
-                    onDeleteHabit = { habit ->
-                        habitViewModel.deleteHabit(habit.id)
-                        // Silinince puanı geri almak istersen buraya logic ekleyebilirsin
-                        // Şimdilik silinen alışkanlık puanı kullanıcıda kalsın :)
-                    },
-                    onEditHabit = { habit ->
-                        // Buraya ileride düzenleme sayfasına gitme kodu gelecek
+                0 -> {
+                    val activeHabits = habitList.filter { !it.isArchived && it.id.isNotEmpty() }
+                    HomeContent(
+                        userData = userData,
+                        habitList = activeHabits,
+                        onNavigateToCreateHabit = onNavigateToCreateHabit,
+                        onProgressChange = { habit, newProgress ->
+                            val wasCompleted = habit.progress >= 1f
+                            val isCompletedNow = newProgress >= 1f
+                            habitViewModel.updateHabitProgress(habit, newProgress)
+                            if (!wasCompleted && isCompletedNow) authViewModel.updateUserPoints(10)
+                            else if (wasCompleted && !isCompletedNow) authViewModel.updateUserPoints(-10)
+                        },
+                        onDeleteHabit = { habit ->
+                            if (habit.id.isNotEmpty()) {
+                                habitViewModel.archiveHabit(habit.id)
+                                Toast.makeText(context, "Silindi", Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                        onEditHabit = { habit ->
+                            habitViewModel.prepareForEdit(habit)
+                            onNavigateToCreateHabit()
+                        },
+                        habitViewModel = habitViewModel
+                    )
+                }
+                1 -> StatisticsScreen(habitList = habitList)
+                2 -> {
+                    val gso = remember {
+                        GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(context.getString(R.string.default_web_client_id))
+                            .requestEmail().build()
                     }
-                )
-                1 -> StatisticsScreenPlaceholder()
-                2 -> ProfileScreenPlaceholder(onLogout, authViewModel)
+                    val googleSignInClient = remember { GoogleSignIn.getClient(context, gso) }
+
+                    ProfileScreen(
+                        userData = userData,
+                        onLogoutClick = {
+                            googleSignInClient.signOut().addOnCompleteListener {
+                                authViewModel.signOut()
+                                onLogout()
+                            }
+                        },
+                        onDeleteAccountClick = {
+                            authViewModel.deleteAccount(
+                                onSuccess = {
+                                    googleSignInClient.signOut().addOnCompleteListener { onLogout() }
+                                },
+                                onError = { }
+                            )
+                        },
+                        viewModel = authViewModel
+                    )
+                }
             }
         }
     }
@@ -127,31 +156,24 @@ fun HomeContent(
     onNavigateToCreateHabit: () -> Unit,
     onProgressChange: (Habit, Float) -> Unit,
     onDeleteHabit: (Habit) -> Unit,
-    onEditHabit: (Habit) -> Unit
+    onEditHabit: (Habit) -> Unit,
+    habitViewModel: HabitViewModel
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = 16.dp),
+        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // 1. Üst Kısım
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
             HeaderSection(userData)
-            NewHabitButton(onNavigateToCreateHabit)
+            NewHabitButton(onClick = {
+                habitViewModel.resetForNewHabit()
+                onNavigateToCreateHabit()
+            })
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Bugünkü Hedeflerin",
-                color = TextDark,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.align(Alignment.Start)
-            )
+            Text("Bugünkü Hedeflerin", color = TextDark, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start))
         }
-
         Spacer(modifier = Modifier.height(16.dp))
 
-        // 2. KAYDIRILABİLİR KARTLAR
         if (habitList.isEmpty()) {
             EmptyStateView()
         } else {
@@ -159,36 +181,20 @@ fun HomeContent(
 
             HorizontalPager(
                 state = pagerState,
+                key = { index -> if (index < habitList.size) habitList[index].id else index },
                 contentPadding = PaddingValues(horizontal = 32.dp),
                 pageSpacing = 16.dp,
                 modifier = Modifier.weight(1f)
             ) { page ->
-                val habit = habitList[page]
-                BigHabitCard(
-                    habit = habit,
-                    onProgressChange = onProgressChange,
-                    onDeleteClick = onDeleteHabit,
-                    onEditClick = onEditHabit
-                )
+                if (page < habitList.size) {
+                    BigHabitCard(habitList[page], onProgressChange, onDeleteHabit, onEditHabit)
+                }
             }
 
-            // Pager Göstergesi
-            Row(
-                Modifier
-                    .wrapContentHeight()
-                    .fillMaxWidth()
-                    .padding(bottom = 16.dp, top = 16.dp),
-                horizontalArrangement = Arrangement.Center
-            ) {
+            Row(Modifier.wrapContentHeight().fillMaxWidth().padding(bottom = 16.dp, top = 16.dp), horizontalArrangement = Arrangement.Center) {
                 repeat(pagerState.pageCount) { iteration ->
                     val color = if (pagerState.currentPage == iteration) PrimaryOrange else Color.LightGray
-                    Box(
-                        modifier = Modifier
-                            .padding(2.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                            .size(8.dp)
-                    )
+                    Box(modifier = Modifier.padding(2.dp).clip(CircleShape).background(color).size(8.dp))
                 }
             }
         }
@@ -196,146 +202,86 @@ fun HomeContent(
 }
 
 @Composable
-fun BigHabitCard(
-    habit: Habit,
-    onProgressChange: (Habit, Float) -> Unit,
-    onDeleteClick: (Habit) -> Unit,
-    onEditClick: (Habit) -> Unit
-) {
+fun BigHabitCard(habit: Habit, onProgressChange: (Habit, Float) -> Unit, onDeleteClick: (Habit) -> Unit, onEditClick: (Habit) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.80f)
+            .fillMaxHeight(0.88f) // Increased height from 0.85f to 0.88f
             .shadow(8.dp, RoundedCornerShape(32.dp)),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
     ) {
-        // Box kullanarak ikonları üst üste bindireceğiz
         Box(modifier = Modifier.fillMaxSize()) {
-
-            // --- ANA İÇERİK ---
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(24.dp),
+                    .padding(top = 32.dp, bottom = 32.dp, start = 24.dp, end = 24.dp), // Explicit large vertical padding
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
+                verticalArrangement = Arrangement.SpaceBetween // Distributes space evenly
             ) {
-                // Üst Kısım
+                // Top Section: Icon & Title
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CategoryIconBox(habit.category, size = 56.dp)
-                    Spacer(modifier = Modifier.height(12.dp))
+                    CategoryIconBox(habit.category, size = 64.dp)
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = habit.title,
-                        fontSize = 24.sp,
+                        fontSize = 26.sp,
                         fontWeight = FontWeight.Bold,
                         color = TextDark,
-                        style = MaterialTheme.typography.headlineMedium,
                         maxLines = 1
                     )
                 }
 
-                // ORTA KISIM: CIRCULAR SLIDER
-                Box(
-                    contentAlignment = Alignment.Center,
-                    modifier = Modifier.size(220.dp)
-                ) {
+                // Middle Section: Progress Circle
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.size(240.dp)) {
                     CircularSlider(
                         value = habit.progress,
-                        onValueChange = { newValue ->
-                            onProgressChange(habit, newValue)
-                        },
+                        onValueChange = { newValue -> onProgressChange(habit, newValue) },
                         modifier = Modifier.fillMaxSize(),
                         primaryColor = if(habit.progress >= 1f) SuccessGreen else SecondaryBlue,
                         secondaryColor = CreamBg
                     )
-
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "${(habit.progress * 100).toInt()}%",
-                            fontSize = 40.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextDark
-                        )
-                        Text(
-                            text = if(habit.progress >= 1f) "Tamamlandı" else "Devam Ediyor",
-                            fontSize = 12.sp,
-                            color = TextLight
-                        )
+                        Text(text = "${(habit.progress * 100).toInt()}%", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text(text = if(habit.progress >= 1f) "Tamamlandı" else "Devam Ediyor", fontSize = 14.sp, color = TextLight)
                     }
                 }
 
-                // Alt Kısım
+                // Bottom Section: Streak & Category Tag
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocalFireDepartment, null, tint = PrimaryOrange, modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.LocalFireDepartment, null, tint = PrimaryOrange, modifier = Modifier.size(24.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("${habit.streak} Günlük Seri", color = TextLight, fontSize = 14.sp)
+                        Text("${habit.streak} Günlük Seri", color = TextLight, fontSize = 16.sp)
                     }
-
-                    Spacer(modifier = Modifier.height(12.dp))
-
-                    Surface(
-                        color = CreamBg,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Surface(color = CreamBg, shape = RoundedCornerShape(12.dp)) {
                         Text(
                             text = habit.category.uppercase(),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 20.dp, vertical = 10.dp),
                             color = TextLight,
                             fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp,
-                            letterSpacing = 1.sp
+                            fontSize = 14.sp
                         )
                     }
                 }
             }
 
-            // --- SAĞ ÜST İKONLAR ---
-            Row(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp),
-                // İkonlar arasındaki boşluğu artırdık: 8.dp -> 16.dp ✅
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // SİLME BUTONU (Sadece %100 ise görünür)
+            // Edit/Delete Icons (Top Right)
+            Row(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 if (habit.progress >= 1f) {
-                    IconButton(
-                        onClick = { onDeleteClick(habit) },
-                        modifier = Modifier
-                            .size(36.dp)
-                            .background(Color.Red.copy(alpha = 0.1f), CircleShape)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Close,
-                            contentDescription = "Sil",
-                            tint = Color.Red,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    IconButton(onClick = { onDeleteClick(habit) }, modifier = Modifier.size(40.dp).background(Color.Red.copy(alpha = 0.1f), CircleShape)) {
+                        Icon(imageVector = Icons.Default.Close, contentDescription = "Sil", tint = Color.Red, modifier = Modifier.size(22.dp))
                     }
                 }
-
-                // DÜZENLEME BUTONU (Her zaman görünür)
-                IconButton(
-                    onClick = { onEditClick(habit) },
-                    modifier = Modifier
-                        .size(36.dp)
-                        .background(CreamBg, CircleShape)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Düzenle",
-                        tint = TextLight,
-                        modifier = Modifier.size(20.dp)
-                    )
+                IconButton(onClick = { onEditClick(habit) }, modifier = Modifier.size(40.dp).background(CreamBg, CircleShape)) {
+                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Düzenle", tint = TextLight, modifier = Modifier.size(22.dp))
                 }
             }
         }
     }
 }
 
-// --- CIRCULAR SLIDER ---
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CircularSlider(
@@ -347,8 +293,7 @@ fun CircularSlider(
 ) {
     var radius by remember { mutableFloatStateOf(0f) }
     var center by remember { mutableStateOf(Offset.Zero) }
-
-    val strokeWidthDp = 14.dp
+    val strokeWidthDp = 16.dp // Slightly thicker stroke
     val density = LocalDensity.current
     val strokeWidthPx = with(density) { strokeWidthDp.toPx() }
 
@@ -361,7 +306,6 @@ fun CircularSlider(
                         val y = event.y - center.y
                         val angle = (Math.toDegrees(atan2(y.toDouble(), x.toDouble())) + 90 + 360) % 360
                         val newProgress = angle.toFloat() / 360f
-
                         if (abs(newProgress - value) > 0.5f) {
                             if (value > 0.5f) onValueChange(1f) else onValueChange(0f)
                         } else {
@@ -399,21 +343,21 @@ fun CircularSlider(
     }
 }
 
-// ... (Diğer tüm yardımcı bileşenler aynı) ...
-// HeaderSection, NewHabitButton, EmptyStateView, CategoryIconBox, BottomNavigationBar, Placeholders...
-// Kodun fazla uzamaması için buraya tekrar kopyalamadım, önceki yanıttakilerle birebir aynıdır.
-// Sadece yukarıdaki BigHabitCard ve HomeContent kısımları değişti.
-// Eğer tam kodu istersen, alt kısım bileşenlerini de ekleyip tek parça halinde verebilirim.
-
 @Composable
 fun HeaderSection(userData: UserData) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 16.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column {
-            Text(text = "İyi Günler,", color = TextLight, fontSize = 16.sp)
+            Text(
+                text = "İyi Günler,",
+                color = TextLight,
+                fontSize = 16.sp
+            )
             Text(
                 text = if (userData.name.isNotEmpty()) userData.name else "Şampiyon",
                 color = TextDark,
@@ -421,7 +365,6 @@ fun HeaderSection(userData: UserData) {
                 fontWeight = FontWeight.Bold
             )
         }
-
         ElevatedCard(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(containerColor = SurfaceWhite),
@@ -453,7 +396,9 @@ fun HeaderSection(userData: UserData) {
 fun NewHabitButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().height(70.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(70.dp),
         shape = RoundedCornerShape(24.dp),
         colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
@@ -464,14 +409,29 @@ fun NewHabitButton(onClick: () -> Unit) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
-                Text("Yeni Alışkanlık", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("Kendine bir iyilik yap", color = Color.White.copy(alpha = 0.8f), fontSize = 12.sp)
+                Text(
+                    text = "Yeni Alışkanlık",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp
+                )
+                Text(
+                    text = "Kendine bir iyilik yap",
+                    color = Color.White.copy(alpha = 0.8f),
+                    fontSize = 12.sp
+                )
             }
             Box(
-                modifier = Modifier.size(40.dp).background(Color.White.copy(alpha = 0.2f), CircleShape),
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color.White.copy(alpha = 0.2f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.Add, null, tint = Color.White)
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = null,
+                    tint = Color.White
+                )
             }
         }
     }
@@ -481,9 +441,21 @@ fun NewHabitButton(onClick: () -> Unit) {
 fun CategoryIconBox(category: String, size: androidx.compose.ui.unit.Dp = 50.dp) {
     val (icon, color) = when (category) {
         "Sağlık" -> Icons.Rounded.Favorite to Color(0xFFFF6B6B)
-        "Kişisel Gelişim" -> Icons.Rounded.LocalLibrary to Color(0xFF4ECDC4)
-        "Finans" -> Icons.Rounded.MonetizationOn to Color(0xFFFFD93D)
         "Spor" -> Icons.Rounded.FitnessCenter to Color(0xFF6C5CE7)
+        "Su İçmek" -> Icons.Rounded.WaterDrop to Color(0xFF00CEC9)
+        "Okuma" -> Icons.Rounded.LocalLibrary to Color(0xFFFAB1A0)
+        "Finans" -> Icons.Rounded.MonetizationOn to Color(0xFFFFD93D)
+        "Kişisel" -> Icons.Rounded.Face to Color(0xFFA29BFE)
+        "Yüzme" -> Icons.Rounded.Pool to Color(0xFF74B9FF)
+        "Meditasyon" -> Icons.Rounded.SelfImprovement to Color(0xFF55E6C1)
+        "Uyku" -> Icons.Rounded.Bedtime to Color(0xFF2d3436)
+        "Yürüyüş" -> Icons.Rounded.DirectionsWalk to Color(0xFF27AE60)
+        "Sosyal" -> Icons.Rounded.Groups to Color(0xFFFF7675)
+        "Yaratıcılık" -> Icons.Rounded.Brush to Color(0xFFFD79A8)
+        "Kodlama" -> Icons.Rounded.Code to Color(0xFF0984E3)
+        "Müzik" -> Icons.Rounded.MusicNote to Color(0xFFE84393)
+        // Eski kayıtlar bozulmasın diye bunu da ekledim:
+        "Kişisel Gelişim" -> Icons.Rounded.LocalLibrary to Color(0xFF4ECDC4)
         else -> Icons.Rounded.SelfImprovement to PrimaryOrange
     }
 
@@ -506,26 +478,48 @@ fun CategoryIconBox(category: String, size: androidx.compose.ui.unit.Dp = 50.dp)
 @Composable
 fun EmptyStateView() {
     Column(
-        modifier = Modifier.fillMaxWidth().padding(top = 60.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 60.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("Henüz bir hedefin yok", color = TextDark, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-        Text("Hadi, ilk adımını at! 🚀", color = TextLight, fontSize = 16.sp, modifier = Modifier.padding(top = 8.dp))
+        Text(
+            text = "Henüz bir hedefin yok",
+            color = TextDark,
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = "Hadi, ilk adımını at! 🚀",
+            color = TextLight,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(top = 8.dp)
+        )
     }
 }
 
 @Composable
 fun BottomNavigationBar(selectedItem: Int, onItemSelected: (Int) -> Unit) {
-    NavigationBar(containerColor = SurfaceWhite, contentColor = PrimaryOrange, tonalElevation = 16.dp) {
+    NavigationBar(
+        containerColor = SurfaceWhite,
+        contentColor = PrimaryOrange,
+        tonalElevation = 16.dp
+    ) {
         val items = listOf(
             Triple("Ana Sayfa", Icons.Default.Home, 0),
             Triple("İstatistikler", Icons.Default.List, 1),
             Triple("Profil", Icons.Default.Person, 2)
         )
+
         items.forEach { (label, icon, index) ->
             NavigationBarItem(
                 icon = { Icon(icon, contentDescription = label) },
-                label = { Text(label, fontWeight = if(selectedItem==index) FontWeight.Bold else FontWeight.Normal) },
+                label = {
+                    Text(
+                        text = label,
+                        fontWeight = if (selectedItem == index) FontWeight.Bold else FontWeight.Normal
+                    )
+                },
                 selected = selectedItem == index,
                 onClick = { onItemSelected(index) },
                 colors = NavigationBarItemDefaults.colors(
@@ -536,22 +530,6 @@ fun BottomNavigationBar(selectedItem: Int, onItemSelected: (Int) -> Unit) {
                     unselectedTextColor = TextLight
                 )
             )
-        }
-    }
-}
-
-@Composable
-fun StatisticsScreenPlaceholder() {
-    Box(modifier = Modifier.fillMaxSize().background(CreamBg), contentAlignment = Alignment.Center) {
-        Text("İstatistikler", color = TextDark)
-    }
-}
-
-@Composable
-fun ProfileScreenPlaceholder(onLogout: () -> Unit, viewModel: AuthViewModel) {
-    Box(modifier = Modifier.fillMaxSize().background(CreamBg), contentAlignment = Alignment.Center) {
-        Button(onClick = { viewModel.signOut(); onLogout() }, colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)) {
-            Text("Çıkış Yap")
         }
     }
 }

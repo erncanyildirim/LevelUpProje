@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Description
@@ -15,8 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suer.levelup.ui.viewmodel.HabitViewModel
@@ -36,19 +39,29 @@ fun HabitCreationScreen(
     onBack: () -> Unit,
     viewModel: HabitViewModel
 ) {
-    var title by remember { mutableStateOf("") }
-    var description by remember { mutableStateOf("") }
+    val currentHabit = viewModel.newHabitState.collectAsState().value
+
+    var title by remember { mutableStateOf(currentHabit.title) }
+    var description by remember { mutableStateOf(currentHabit.description) }
 
     // Tarih İşlemleri
     val calendar = Calendar.getInstance()
-    var selectedDate by remember { mutableStateOf(calendar.timeInMillis) }
     val dateFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+    val initialDateMillis = try {
+        if (currentHabit.startDate.isNotEmpty())
+            dateFormatter.parse(currentHabit.startDate)?.time ?: calendar.timeInMillis
+        else calendar.timeInMillis
+    } catch (e: Exception) {
+        calendar.timeInMillis
+    }
+
+    var selectedDate by remember { mutableStateOf(initialDateMillis) }
     var showDatePicker by remember { mutableStateOf(false) }
 
-    // DatePicker State
     val datePickerState = rememberDatePickerState(initialSelectedDateMillis = selectedDate)
 
-    // Takvim Diyaloğu
+    // Tarih Seçici Diyalog
     if (showDatePicker) {
         DatePickerDialog(
             onDismissRequest = { showDatePicker = false },
@@ -92,7 +105,7 @@ fun HabitCreationScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
             Text(
-                text = "Hayalindeki Alışkanlığı\nOluşturalım ✨",
+                text = if(currentHabit.id.isEmpty()) "Hayalindeki Alışkanlığı\nOluşturalım ✨" else "Alışkanlığını\nDüzenle ✏️",
                 style = MaterialTheme.typography.headlineMedium,
                 color = TextDark,
                 fontWeight = FontWeight.ExtraBold
@@ -107,35 +120,71 @@ fun HabitCreationScreen(
                     modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // --- BAŞLIK ALANI ---
                     OutlinedTextField(
                         value = title,
                         onValueChange = { title = it },
                         label = { Text("Alışkanlık Adı") },
-                        placeholder = { Text("Örn: Her sabah kitap oku") },
+                        placeholder = { Text("Örn: Kitap okumak") },
                         leadingIcon = { Icon(Icons.Default.Edit, null, tint = PrimaryOrange) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        singleLine = true, // Tek satır olsun ki "Enter" basınca diğer kutuya geçsin
+
+                        // KLAVYE AYARLARI (Türkçe Karakter Destekli)
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences, // İlk harf büyük
+                            autoCorrect = true,
+                            keyboardType = KeyboardType.Text, // Standart metin klavyesi
+                            imeAction = ImeAction.Next // "İleri" butonu çıksın
+                        ),
+
+                        // RENKLER (Koyu ve Net)
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextDark,
+                            unfocusedTextColor = TextDark,
                             focusedBorderColor = PrimaryOrange,
-                            focusedLabelColor = PrimaryOrange
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedLabelColor = PrimaryOrange,
+                            unfocusedLabelColor = Color.Gray,
+                            cursorColor = PrimaryOrange
                         )
                     )
 
+                    // --- AÇIKLAMA ALANI ---
                     OutlinedTextField(
                         value = description,
                         onValueChange = { description = it },
                         label = { Text("Motivasyon Notun") },
-                        placeholder = { Text("Neden bu alışkanlığı kazanmak istiyorsun?") },
+                        placeholder = { Text("Neden istiyorsun?") },
                         leadingIcon = { Icon(Icons.Default.Description, null, tint = PrimaryOrange) },
-                        modifier = Modifier.fillMaxWidth().height(120.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(120.dp),
                         shape = RoundedCornerShape(12.dp),
+                        singleLine = false, // Çok satırlı olabilir
+                        maxLines = 5,
+
+                        // KLAVYE AYARLARI
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Sentences,
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Done // "Tamam" butonu çıksın (Klavye kapansın)
+                        ),
+
+                        // RENKLER
                         colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextDark,
+                            unfocusedTextColor = TextDark,
                             focusedBorderColor = PrimaryOrange,
-                            focusedLabelColor = PrimaryOrange
+                            unfocusedBorderColor = Color.LightGray,
+                            focusedLabelColor = PrimaryOrange,
+                            unfocusedLabelColor = Color.Gray,
+                            cursorColor = PrimaryOrange
                         )
                     )
 
-                    // Tıklanabilir Tarih Alanı
+                    // --- TARİH SEÇİMİ (Tıklanabilir Alan) ---
                     Box {
                         OutlinedTextField(
                             value = dateFormatter.format(Date(selectedDate)),
@@ -144,13 +193,17 @@ fun HabitCreationScreen(
                             leadingIcon = { Icon(Icons.Default.Event, null, tint = PrimaryOrange) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            readOnly = true, // Klavye açılmasın
+                            readOnly = true, // Klavye açılmasın, tarih seçici açılsın
                             colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = TextDark,
+                                unfocusedTextColor = TextDark,
                                 focusedBorderColor = PrimaryOrange,
-                                focusedLabelColor = PrimaryOrange
+                                unfocusedBorderColor = Color.LightGray,
+                                focusedLabelColor = PrimaryOrange,
+                                unfocusedLabelColor = Color.Gray
                             )
                         )
-                        // Görünmez Tıklama Alanı
+                        // Tıklama Alanı (TextField üzerine görünmez katman)
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
@@ -166,10 +219,14 @@ fun HabitCreationScreen(
 
             Spacer(modifier = Modifier.weight(1f))
 
+            // İlerleme Çubuğu ve Buton
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 LinearProgressIndicator(
                     progress = { 0.33f },
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
                     color = PrimaryOrange,
                     trackColor = Color.LightGray.copy(alpha = 0.3f),
                 )
@@ -181,7 +238,9 @@ fun HabitCreationScreen(
                         viewModel.updateTitleDescDate(title, description, dateFormatter.format(Date(selectedDate)))
                         onNext()
                     },
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)

@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.rounded.* // Tüm yuvarlak ikonları al
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -34,9 +34,12 @@ fun HabitCustomizationScreen(
     onBack: () -> Unit,
     viewModel: HabitViewModel
 ) {
-    var selectedCategory by remember { mutableStateOf("Genel") }
+    // ViewModel'daki veriyi al (Düzenleme modu için)
+    val currentHabit = viewModel.newHabitState.collectAsState().value
 
-    // YENİ VE GENİŞ KATEGORİ LİSTESİ
+    // Varsayılan kategori ayarla. Eğer boşsa (yeni kayıt) "Genel" olsun.
+    var selectedCategory by remember { mutableStateOf(currentHabit.category.ifEmpty { "Genel" }) }
+
     val categories = listOf(
         CategoryItem("Sağlık", Icons.Rounded.Favorite, Color(0xFFFF6B6B)),
         CategoryItem("Spor", Icons.Rounded.FitnessCenter, Color(0xFF6C5CE7)),
@@ -46,12 +49,12 @@ fun HabitCustomizationScreen(
         CategoryItem("Kişisel", Icons.Rounded.Face, Color(0xFFA29BFE)),
         CategoryItem("Yüzme", Icons.Rounded.Pool, Color(0xFF74B9FF)),
         CategoryItem("Meditasyon", Icons.Rounded.SelfImprovement, Color(0xFF55E6C1)),
-        CategoryItem("Uyku", Icons.Rounded.Bedtime, Color(0xFF2d3436)), // Yeni
-        CategoryItem("Yürüyüş", Icons.Rounded.DirectionsWalk, Color(0xFF27AE60)), // Yeni
-        CategoryItem("Sosyal", Icons.Rounded.Groups, Color(0xFFFF7675)), // Yeni
-        CategoryItem("Yaratıcılık", Icons.Rounded.Brush, Color(0xFFFD79A8)), // Yeni
-        CategoryItem("Kodlama", Icons.Rounded.Code, Color(0xFF0984E3)), // Yeni
-        CategoryItem("Müzik", Icons.Rounded.MusicNote, Color(0xFFE84393)) // Yeni
+        CategoryItem("Uyku", Icons.Rounded.Bedtime, Color(0xFF2d3436)),
+        CategoryItem("Yürüyüş", Icons.Rounded.DirectionsWalk, Color(0xFF27AE60)),
+        CategoryItem("Sosyal", Icons.Rounded.Groups, Color(0xFFFF7675)),
+        CategoryItem("Yaratıcılık", Icons.Rounded.Brush, Color(0xFFFD79A8)),
+        CategoryItem("Kodlama", Icons.Rounded.Code, Color(0xFF0984E3)),
+        CategoryItem("Müzik", Icons.Rounded.MusicNote, Color(0xFFE84393))
     )
 
     Scaffold(
@@ -117,7 +120,9 @@ fun HabitCustomizationScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
                 ) {
-                    Text("Başlat 🚀", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    // ID varsa "Güncelle", yoksa "Başlat" yaz
+                    val buttonText = if (currentHabit.id.isNotEmpty()) "Güncelle" else "Başlat 🚀"
+                    Text(buttonText, fontSize = 18.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
