@@ -21,11 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suer.levelup.ui.viewmodel.HabitViewModel
-
-private val CreamBg = Color(0xFFFDFDF6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val TextDark = Color(0xFF2D3436)
+import com.suer.levelup.ui.theme.* // <-- TÜM RENKLER BURADAN GELİYOR
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,21 +36,22 @@ fun HabitCustomizationScreen(
     // Varsayılan kategori ayarla. Eğer boşsa (yeni kayıt) "Genel" olsun.
     var selectedCategory by remember { mutableStateOf(currentHabit.category.ifEmpty { "Genel" }) }
 
+    // Renkleri artık Color.kt dosyasından çekiyoruz
     val categories = listOf(
-        CategoryItem("Sağlık", Icons.Rounded.Favorite, Color(0xFFFF6B6B)),
-        CategoryItem("Spor", Icons.Rounded.FitnessCenter, Color(0xFF6C5CE7)),
-        CategoryItem("Su İçmek", Icons.Rounded.WaterDrop, Color(0xFF00CEC9)),
-        CategoryItem("Okuma", Icons.Rounded.LocalLibrary, Color(0xFFFAB1A0)),
-        CategoryItem("Finans", Icons.Rounded.MonetizationOn, Color(0xFFFFD93D)),
-        CategoryItem("Kişisel", Icons.Rounded.Face, Color(0xFFA29BFE)),
-        CategoryItem("Yüzme", Icons.Rounded.Pool, Color(0xFF74B9FF)),
-        CategoryItem("Meditasyon", Icons.Rounded.SelfImprovement, Color(0xFF55E6C1)),
-        CategoryItem("Uyku", Icons.Rounded.Bedtime, Color(0xFF2d3436)),
-        CategoryItem("Yürüyüş", Icons.Rounded.DirectionsWalk, Color(0xFF27AE60)),
-        CategoryItem("Sosyal", Icons.Rounded.Groups, Color(0xFFFF7675)),
-        CategoryItem("Yaratıcılık", Icons.Rounded.Brush, Color(0xFFFD79A8)),
-        CategoryItem("Kodlama", Icons.Rounded.Code, Color(0xFF0984E3)),
-        CategoryItem("Müzik", Icons.Rounded.MusicNote, Color(0xFFE84393))
+        CategoryItem("Sağlık", Icons.Rounded.Favorite, ColorHealth),
+        CategoryItem("Spor", Icons.Rounded.FitnessCenter, ColorSport),
+        CategoryItem("Su İçmek", Icons.Rounded.WaterDrop, ColorWater),
+        CategoryItem("Okuma", Icons.Rounded.LocalLibrary, ColorReading),
+        CategoryItem("Finans", Icons.Rounded.MonetizationOn, ColorFinance),
+        CategoryItem("Kişisel", Icons.Rounded.Face, ColorPersonal),
+        CategoryItem("Yüzme", Icons.Rounded.Pool, ColorPool),
+        CategoryItem("Meditasyon", Icons.Rounded.SelfImprovement, ColorMeditation),
+        CategoryItem("Uyku", Icons.Rounded.Bedtime, ColorSleep),
+        CategoryItem("Yürüyüş", Icons.Rounded.DirectionsWalk, ColorWalk),
+        CategoryItem("Sosyal", Icons.Rounded.Groups, ColorSocial),
+        CategoryItem("Yaratıcılık", Icons.Rounded.Brush, ColorCreative),
+        CategoryItem("Kodlama", Icons.Rounded.Code, ColorCode),
+        CategoryItem("Müzik", Icons.Rounded.MusicNote, ColorMusic)
     )
 
     Scaffold(

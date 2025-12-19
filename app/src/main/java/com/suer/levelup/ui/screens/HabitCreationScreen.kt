@@ -23,14 +23,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.suer.levelup.ui.viewmodel.HabitViewModel
+import com.suer.levelup.ui.theme.* // <-- TÜM RENKLERİ BURADAN ALIYORUZ
 import java.text.SimpleDateFormat
 import java.util.*
-
-// Renkler
-private val CreamBg = Color(0xFFFDFDF6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val TextDark = Color(0xFF2D3436)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -129,17 +124,17 @@ fun HabitCreationScreen(
                         leadingIcon = { Icon(Icons.Default.Edit, null, tint = PrimaryOrange) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
-                        singleLine = true, // Tek satır olsun ki "Enter" basınca diğer kutuya geçsin
+                        singleLine = true,
 
-                        // KLAVYE AYARLARI (Türkçe Karakter Destekli)
+                        // KLAVYE AYARLARI
                         keyboardOptions = KeyboardOptions(
-                            capitalization = KeyboardCapitalization.Sentences, // İlk harf büyük
+                            capitalization = KeyboardCapitalization.Sentences,
                             autoCorrect = true,
-                            keyboardType = KeyboardType.Text, // Standart metin klavyesi
-                            imeAction = ImeAction.Next // "İleri" butonu çıksın
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Next
                         ),
 
-                        // RENKLER (Koyu ve Net)
+                        // RENKLER
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = TextDark,
                             unfocusedTextColor = TextDark,
@@ -162,14 +157,14 @@ fun HabitCreationScreen(
                             .fillMaxWidth()
                             .height(120.dp),
                         shape = RoundedCornerShape(12.dp),
-                        singleLine = false, // Çok satırlı olabilir
+                        singleLine = false,
                         maxLines = 5,
 
                         // KLAVYE AYARLARI
                         keyboardOptions = KeyboardOptions(
                             capitalization = KeyboardCapitalization.Sentences,
                             keyboardType = KeyboardType.Text,
-                            imeAction = ImeAction.Done // "Tamam" butonu çıksın (Klavye kapansın)
+                            imeAction = ImeAction.Done
                         ),
 
                         // RENKLER
@@ -184,7 +179,7 @@ fun HabitCreationScreen(
                         )
                     )
 
-                    // --- TARİH SEÇİMİ (Tıklanabilir Alan) ---
+                    // --- TARİH SEÇİMİ ---
                     Box {
                         OutlinedTextField(
                             value = dateFormatter.format(Date(selectedDate)),
@@ -193,7 +188,7 @@ fun HabitCreationScreen(
                             leadingIcon = { Icon(Icons.Default.Event, null, tint = PrimaryOrange) },
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp),
-                            readOnly = true, // Klavye açılmasın, tarih seçici açılsın
+                            readOnly = true,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = TextDark,
                                 unfocusedTextColor = TextDark,
@@ -203,7 +198,6 @@ fun HabitCreationScreen(
                                 unfocusedLabelColor = Color.Gray
                             )
                         )
-                        // Tıklama Alanı (TextField üzerine görünmez katman)
                         Box(
                             modifier = Modifier
                                 .matchParentSize()

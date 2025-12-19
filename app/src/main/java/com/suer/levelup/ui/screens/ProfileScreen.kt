@@ -39,14 +39,7 @@ import coil.request.ImageRequest
 import com.suer.levelup.R
 import com.suer.levelup.ui.viewmodel.AuthViewModel
 import com.suer.levelup.ui.viewmodel.UserData
-
-// Renkler
-private val CreamBg = Color(0xFFFDFDF6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val TextDark = Color(0xFF2D3436)
-private val TextLight = Color(0xFF636E72)
-private val GoldColor = Color(0xFFFFC107)
+import com.suer.levelup.ui.theme.* // <-- Renkler artık buradan geliyor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,6 +62,10 @@ fun ProfileScreen(
     val pointsToNextLevel = 100 - (userData.totalPoints % 100)
     val progressFloat = (userData.totalPoints % 100) / 100f
 
+    // Özel altın rengini Color.kt'ye eklemediysek burada geçici tanımlayabiliriz
+    // Veya tema dosyasında ColorGold varsa oradan çekeriz.
+    val goldColor = Color(0xFFFFC107)
+
     val allBadges = listOf(
         Badge("Yeni Başlayan", 0, Icons.Rounded.Star),
         Badge("Azimli", 50, Icons.Rounded.MilitaryTech),
@@ -80,10 +77,18 @@ fun ProfileScreen(
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
-            title = { Text("Hesabımı Sil", fontWeight = FontWeight.Bold, color = Color.Red) },
+            title = {
+                Text(
+                    "Hesabımı Sil",
+                    fontWeight = FontWeight.Bold,
+                    color = ErrorRed // Color.kt'den
+                )
+            },
             text = {
-                Text("Hesabınızın silinmesini onaylarsanız tüm verileriniz bir daha geri getirilmemek üzere silinecektir.",
-                    textAlign = TextAlign.Center)
+                Text(
+                    "Hesabınızın silinmesini onaylarsanız tüm verileriniz bir daha geri getirilmemek üzere silinecektir.",
+                    textAlign = TextAlign.Center
+                )
             },
             containerColor = SurfaceWhite,
             confirmButton = {
@@ -92,7 +97,7 @@ fun ProfileScreen(
                         showDeleteDialog = false
                         onDeleteAccountClick() // Silme işlemini başlat
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
                 ) {
                     Text("Onaylıyorum", fontWeight = FontWeight.Bold)
                 }
@@ -122,57 +127,130 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // Profil Resmi
-            Box(modifier = Modifier.padding(top = 24.dp).size(120.dp)) {
+            Box(
+                modifier = Modifier
+                    .padding(top = 24.dp)
+                    .size(120.dp)
+            ) {
                 AsyncImage(
                     model = ImageRequest.Builder(LocalContext.current)
-                        .data(if(userData.profileImageUrl.isNotEmpty()) userData.profileImageUrl else R.drawable.ic_launcher_background)
+                        .data(
+                            if (userData.profileImageUrl.isNotEmpty()) userData.profileImageUrl
+                            else R.drawable.ic_launcher_background
+                        )
                         .crossfade(true).build(),
                     contentDescription = "Profil Resmi",
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape).border(4.dp, SurfaceWhite, CircleShape).clickable { galleryLauncher.launch("image/*") }
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape)
+                        .border(4.dp, SurfaceWhite, CircleShape)
+                        .clickable { galleryLauncher.launch("image/*") }
                 )
                 Box(
-                    modifier = Modifier.align(Alignment.BottomEnd).size(36.dp).clip(CircleShape).background(PrimaryOrange).border(2.dp, SurfaceWhite, CircleShape).clickable { galleryLauncher.launch("image/*") },
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(PrimaryOrange)
+                        .border(2.dp, SurfaceWhite, CircleShape)
+                        .clickable { galleryLauncher.launch("image/*") },
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(Icons.Default.CameraAlt, null, tint = Color.White, modifier = Modifier.size(18.dp))
+                    Icon(
+                        Icons.Default.CameraAlt,
+                        null,
+                        tint = SurfaceWhite,
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            Text(text = userData.name.ifEmpty { "Kullanıcı" }, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            Text(text = userData.email, fontSize = 14.sp, color = TextLight)
+            Text(
+                text = userData.name.ifEmpty { "Kullanıcı" },
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextDark
+            )
+            Text(
+                text = userData.email,
+                fontSize = 14.sp,
+                color = TextLight
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // İstatistikler
-            Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                StatCard(Icons.Rounded.Star, "Toplam Puan", "${userData.totalPoints}", GoldColor, Modifier.weight(1f))
-                StatCard(Icons.Rounded.MilitaryTech, "Seviye", "$level", PrimaryOrange, Modifier.weight(1f))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                StatCard(
+                    Icons.Rounded.Star,
+                    "Toplam Puan",
+                    "${userData.totalPoints}",
+                    goldColor,
+                    Modifier.weight(1f)
+                )
+                StatCard(
+                    Icons.Rounded.MilitaryTech,
+                    "Seviye",
+                    "$level",
+                    PrimaryOrange,
+                    Modifier.weight(1f)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // Seviye Çubuğu
             Column(modifier = Modifier.padding(horizontal = 24.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Sonraki Seviye: ${level + 1}", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                    Text("$pointsToNextLevel puan kaldı", fontSize = 12.sp, color = TextLight)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        "Sonraki Seviye: ${level + 1}",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextDark
+                    )
+                    Text(
+                        "$pointsToNextLevel puan kaldı",
+                        fontSize = 12.sp,
+                        color = TextLight
+                    )
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                LinearProgressIndicator(progress = { progressFloat }, modifier = Modifier.fillMaxWidth().height(12.dp).clip(RoundedCornerShape(6.dp)), color = PrimaryOrange, trackColor = Color.LightGray.copy(alpha = 0.3f))
+                LinearProgressIndicator(
+                    progress = { progressFloat },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(12.dp)
+                        .clip(RoundedCornerShape(6.dp)),
+                    color = PrimaryOrange,
+                    trackColor = Color.LightGray.copy(alpha = 0.3f)
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))
 
             // Rozetler
             Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)) {
-                Text("Rozetlerim 🏆", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                Text(
+                    "Rozetlerim 🏆",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
                 Spacer(modifier = Modifier.height(16.dp))
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     items(allBadges) { badge ->
                         val isUnlocked = userData.totalPoints >= badge.requiredPoints
-                        BadgeCard(badge, isUnlocked)
+                        BadgeCard(badge, isUnlocked, goldColor)
                     }
                 }
             }
@@ -180,17 +258,27 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(48.dp))
 
             // BUTONLAR
-            Column(modifier = Modifier.padding(horizontal = 24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(
+                modifier = Modifier.padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 Button(
                     onClick = onLogoutClick,
                     colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFECEB)),
                     shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                     elevation = ButtonDefaults.buttonElevation(0.dp)
                 ) {
-                    Icon(Icons.Default.Logout, null, tint = Color.Red)
+                    Icon(Icons.Default.Logout, null, tint = ErrorRed)
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Çıkış Yap", color = Color.Red, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(
+                        "Çıkış Yap",
+                        color = ErrorRed,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp
+                    )
                 }
 
                 // HESABI SİL BUTONU (Tıklanınca Dialog Açılır)
@@ -198,7 +286,12 @@ fun ProfileScreen(
                     onClick = { showDeleteDialog = true },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Icon(Icons.Default.DeleteForever, null, tint = TextLight, modifier = Modifier.size(20.dp))
+                    Icon(
+                        Icons.Default.DeleteForever,
+                        null,
+                        tint = TextLight,
+                        modifier = Modifier.size(20.dp)
+                    )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Hesabımı Sil", color = TextLight, fontSize = 14.sp)
                 }
@@ -208,14 +301,35 @@ fun ProfileScreen(
     }
 }
 
-// ... (StatCard, BadgeCard, Badge data class KODLARI AYNEN KALSIN) ...
+// Veri Sınıfı
 data class Badge(val name: String, val requiredPoints: Int, val icon: ImageVector)
 
 @Composable
-fun StatCard(icon: ImageVector, title: String, value: String, color: Color, modifier: Modifier = Modifier) {
-    ElevatedCard(modifier = modifier, shape = RoundedCornerShape(20.dp), colors = CardDefaults.elevatedCardColors(containerColor = SurfaceWhite), elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)) {
-        Column(modifier = Modifier.padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Box(modifier = Modifier.size(48.dp).background(color.copy(alpha = 0.1f), CircleShape), contentAlignment = Alignment.Center) { Icon(icon, null, tint = color, modifier = Modifier.size(24.dp)) }
+fun StatCard(
+    icon: ImageVector,
+    title: String,
+    value: String,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    ElevatedCard(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.elevatedCardColors(containerColor = SurfaceWhite),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(color.copy(alpha = 0.1f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, null, tint = color, modifier = Modifier.size(24.dp))
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Text(value, fontSize = 24.sp, fontWeight = FontWeight.Bold, color = TextDark)
             Text(title, fontSize = 12.sp, color = TextLight)
@@ -224,11 +338,35 @@ fun StatCard(icon: ImageVector, title: String, value: String, color: Color, modi
 }
 
 @Composable
-fun BadgeCard(badge: Badge, isUnlocked: Boolean) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.alpha(if (isUnlocked) 1f else 0.4f)) {
-        Box(modifier = Modifier.size(70.dp).clip(CircleShape).background(if (isUnlocked) GoldColor else Color.Gray).border(2.dp, SurfaceWhite, CircleShape), contentAlignment = Alignment.Center) { Icon(badge.icon, null, tint = SurfaceWhite, modifier = Modifier.size(32.dp)) }
+fun BadgeCard(badge: Badge, isUnlocked: Boolean, goldColor: Color) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.alpha(if (isUnlocked) 1f else 0.4f)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(70.dp)
+                .clip(CircleShape)
+                .background(if (isUnlocked) goldColor else Color.Gray)
+                .border(2.dp, SurfaceWhite, CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                badge.icon,
+                null,
+                tint = SurfaceWhite,
+                modifier = Modifier.size(32.dp)
+            )
+        }
         Spacer(modifier = Modifier.height(8.dp))
-        Text(badge.name, fontSize = 12.sp, color = TextDark, fontWeight = FontWeight.Medium)
-        if (!isUnlocked) { Text("${badge.requiredPoints}p", fontSize = 10.sp, color = TextLight) }
+        Text(
+            badge.name,
+            fontSize = 12.sp,
+            color = TextDark,
+            fontWeight = FontWeight.Medium
+        )
+        if (!isUnlocked) {
+            Text("${badge.requiredPoints}p", fontSize = 10.sp, color = TextLight)
+        }
     }
 }

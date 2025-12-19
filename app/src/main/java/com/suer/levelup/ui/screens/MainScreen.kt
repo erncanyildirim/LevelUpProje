@@ -18,11 +18,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.LocalFireDepartment
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.FitnessCenter
-import androidx.compose.material.icons.rounded.LocalLibrary
-import androidx.compose.material.icons.rounded.MonetizationOn
-import androidx.compose.material.icons.rounded.SelfImprovement
+import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -45,27 +41,18 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
-import androidx.compose.material.icons.rounded.*
 import com.suer.levelup.R
 import com.suer.levelup.data.model.Habit
 import com.suer.levelup.ui.viewmodel.AuthViewModel
 import com.suer.levelup.ui.viewmodel.HabitViewModel
 import com.suer.levelup.ui.viewmodel.UserData
+import com.suer.levelup.ui.theme.* // <-- TÜM RENKLER BURADAN GELİYOR
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.min
-
-// --- COLOR PALETTE ---
-private val CreamBg = Color(0xFFFDFDF6)
-private val SurfaceWhite = Color(0xFFFFFFFF)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val SecondaryBlue = Color(0xFF4A90E2)
-private val TextDark = Color(0xFF2D3436)
-private val TextLight = Color(0xFF636E72)
-private val SuccessGreen = Color(0xFF2ECC71)
 
 @Composable
 fun MainScreen(
@@ -160,7 +147,9 @@ fun HomeContent(
     habitViewModel: HabitViewModel
 ) {
     Column(
-        modifier = Modifier.fillMaxSize().padding(top = 16.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Column(modifier = Modifier.padding(horizontal = 24.dp)) {
@@ -170,7 +159,13 @@ fun HomeContent(
                 onNavigateToCreateHabit()
             })
             Spacer(modifier = Modifier.height(24.dp))
-            Text("Bugünkü Hedeflerin", color = TextDark, fontSize = 22.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.align(Alignment.Start))
+            Text(
+                "Bugünkü Hedeflerin",
+                color = TextDark,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.align(Alignment.Start)
+            )
         }
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -191,10 +186,22 @@ fun HomeContent(
                 }
             }
 
-            Row(Modifier.wrapContentHeight().fillMaxWidth().padding(bottom = 16.dp, top = 16.dp), horizontalArrangement = Arrangement.Center) {
+            Row(
+                modifier = Modifier
+                    .wrapContentHeight()
+                    .fillMaxWidth()
+                    .padding(bottom = 16.dp, top = 16.dp),
+                horizontalArrangement = Arrangement.Center
+            ) {
                 repeat(pagerState.pageCount) { iteration ->
                     val color = if (pagerState.currentPage == iteration) PrimaryOrange else Color.LightGray
-                    Box(modifier = Modifier.padding(2.dp).clip(CircleShape).background(color).size(8.dp))
+                    Box(
+                        modifier = Modifier
+                            .padding(2.dp)
+                            .clip(CircleShape)
+                            .background(color)
+                            .size(8.dp)
+                    )
                 }
             }
         }
@@ -202,11 +209,16 @@ fun HomeContent(
 }
 
 @Composable
-fun BigHabitCard(habit: Habit, onProgressChange: (Habit, Float) -> Unit, onDeleteClick: (Habit) -> Unit, onEditClick: (Habit) -> Unit) {
+fun BigHabitCard(
+    habit: Habit,
+    onProgressChange: (Habit, Float) -> Unit,
+    onDeleteClick: (Habit) -> Unit,
+    onEditClick: (Habit) -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .fillMaxHeight(0.88f) // Increased height from 0.85f to 0.88f
+            .fillMaxHeight(0.88f)
             .shadow(8.dp, RoundedCornerShape(32.dp)),
         shape = RoundedCornerShape(32.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceWhite)
@@ -215,11 +227,11 @@ fun BigHabitCard(habit: Habit, onProgressChange: (Habit, Float) -> Unit, onDelet
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 32.dp, bottom = 32.dp, start = 24.dp, end = 24.dp), // Explicit large vertical padding
+                    .padding(vertical = 32.dp, horizontal = 24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween // Distributes space evenly
+                verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // Top Section: Icon & Title
+                // İkon ve Başlık
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     CategoryIconBox(habit.category, size = 64.dp)
                     Spacer(modifier = Modifier.height(16.dp))
@@ -232,25 +244,39 @@ fun BigHabitCard(habit: Habit, onProgressChange: (Habit, Float) -> Unit, onDelet
                     )
                 }
 
-                // Middle Section: Progress Circle
+                // İlerleme Çemberi
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.size(240.dp)) {
                     CircularSlider(
                         value = habit.progress,
                         onValueChange = { newValue -> onProgressChange(habit, newValue) },
                         modifier = Modifier.fillMaxSize(),
-                        primaryColor = if(habit.progress >= 1f) SuccessGreen else SecondaryBlue,
+                        primaryColor = if (habit.progress >= 1f) SuccessGreen else SecondaryBlue,
                         secondaryColor = CreamBg
                     )
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(text = "${(habit.progress * 100).toInt()}%", fontSize = 48.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                        Text(text = if(habit.progress >= 1f) "Tamamlandı" else "Devam Ediyor", fontSize = 14.sp, color = TextLight)
+                        Text(
+                            text = "${(habit.progress * 100).toInt()}%",
+                            fontSize = 48.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        )
+                        Text(
+                            text = if (habit.progress >= 1f) "Tamamlandı" else "Devam Ediyor",
+                            fontSize = 14.sp,
+                            color = TextLight
+                        )
                     }
                 }
 
-                // Bottom Section: Streak & Category Tag
+                // Alt Bilgiler
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.LocalFireDepartment, null, tint = PrimaryOrange, modifier = Modifier.size(24.dp))
+                        Icon(
+                            Icons.Default.LocalFireDepartment,
+                            null,
+                            tint = PrimaryOrange,
+                            modifier = Modifier.size(24.dp)
+                        )
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("${habit.streak} Günlük Seri", color = TextLight, fontSize = 16.sp)
                     }
@@ -267,15 +293,40 @@ fun BigHabitCard(habit: Habit, onProgressChange: (Habit, Float) -> Unit, onDelet
                 }
             }
 
-            // Edit/Delete Icons (Top Right)
-            Row(modifier = Modifier.align(Alignment.TopEnd).padding(20.dp), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            // Düzenle ve Sil Butonları
+            Row(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
                 if (habit.progress >= 1f) {
-                    IconButton(onClick = { onDeleteClick(habit) }, modifier = Modifier.size(40.dp).background(Color.Red.copy(alpha = 0.1f), CircleShape)) {
-                        Icon(imageVector = Icons.Default.Close, contentDescription = "Sil", tint = Color.Red, modifier = Modifier.size(22.dp))
+                    IconButton(
+                        onClick = { onDeleteClick(habit) },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.Red.copy(alpha = 0.1f), CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Close,
+                            contentDescription = "Sil",
+                            tint = Color.Red,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
                 }
-                IconButton(onClick = { onEditClick(habit) }, modifier = Modifier.size(40.dp).background(CreamBg, CircleShape)) {
-                    Icon(imageVector = Icons.Default.Edit, contentDescription = "Düzenle", tint = TextLight, modifier = Modifier.size(22.dp))
+                IconButton(
+                    onClick = { onEditClick(habit) },
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(CreamBg, CircleShape)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = "Düzenle",
+                        tint = TextLight,
+                        modifier = Modifier.size(22.dp)
+                    )
                 }
             }
         }
@@ -293,7 +344,7 @@ fun CircularSlider(
 ) {
     var radius by remember { mutableFloatStateOf(0f) }
     var center by remember { mutableStateOf(Offset.Zero) }
-    val strokeWidthDp = 16.dp // Slightly thicker stroke
+    val strokeWidthDp = 16.dp
     val density = LocalDensity.current
     val strokeWidthPx = with(density) { strokeWidthDp.toPx() }
 
@@ -324,7 +375,11 @@ fun CircularSlider(
             }
     ) {
         val arcRadius = radius
-        drawCircle(color = secondaryColor, radius = arcRadius, style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round))
+        drawCircle(
+            color = secondaryColor,
+            radius = arcRadius,
+            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+        )
         drawArc(
             color = primaryColor,
             startAngle = -90f,
@@ -338,8 +393,17 @@ fun CircularSlider(
         val angleInRadians = angleInDegrees * (PI / 180f).toFloat()
         val knobX = center.x + arcRadius * cos(angleInRadians)
         val knobY = center.y + arcRadius * sin(angleInRadians)
-        drawCircle(color = Color.White, radius = strokeWidthPx * 0.7f, center = Offset(knobX, knobY))
-        drawCircle(color = primaryColor, radius = strokeWidthPx * 0.7f, center = Offset(knobX, knobY), style = Stroke(width = 2.dp.toPx()))
+        drawCircle(
+            color = Color.White,
+            radius = strokeWidthPx * 0.7f,
+            center = Offset(knobX, knobY)
+        )
+        drawCircle(
+            color = primaryColor,
+            radius = strokeWidthPx * 0.7f,
+            center = Offset(knobX, knobY),
+            style = Stroke(width = 2.dp.toPx())
+        )
     }
 }
 
@@ -377,7 +441,7 @@ fun HeaderSection(userData: UserData) {
                 Icon(
                     imageVector = Icons.Default.Star,
                     contentDescription = null,
-                    tint = Color(0xFFFFC107),
+                    tint = Color(0xFFFFC107), // Yıldız sarısı özel kalabilir
                     modifier = Modifier.size(28.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -439,23 +503,24 @@ fun NewHabitButton(onClick: () -> Unit) {
 
 @Composable
 fun CategoryIconBox(category: String, size: androidx.compose.ui.unit.Dp = 50.dp) {
+    // Merkezi Color.kt dosyasından gelen renkleri kullanıyoruz
     val (icon, color) = when (category) {
-        "Sağlık" -> Icons.Rounded.Favorite to Color(0xFFFF6B6B)
-        "Spor" -> Icons.Rounded.FitnessCenter to Color(0xFF6C5CE7)
-        "Su İçmek" -> Icons.Rounded.WaterDrop to Color(0xFF00CEC9)
-        "Okuma" -> Icons.Rounded.LocalLibrary to Color(0xFFFAB1A0)
-        "Finans" -> Icons.Rounded.MonetizationOn to Color(0xFFFFD93D)
-        "Kişisel" -> Icons.Rounded.Face to Color(0xFFA29BFE)
-        "Yüzme" -> Icons.Rounded.Pool to Color(0xFF74B9FF)
-        "Meditasyon" -> Icons.Rounded.SelfImprovement to Color(0xFF55E6C1)
-        "Uyku" -> Icons.Rounded.Bedtime to Color(0xFF2d3436)
-        "Yürüyüş" -> Icons.Rounded.DirectionsWalk to Color(0xFF27AE60)
-        "Sosyal" -> Icons.Rounded.Groups to Color(0xFFFF7675)
-        "Yaratıcılık" -> Icons.Rounded.Brush to Color(0xFFFD79A8)
-        "Kodlama" -> Icons.Rounded.Code to Color(0xFF0984E3)
-        "Müzik" -> Icons.Rounded.MusicNote to Color(0xFFE84393)
-        // Eski kayıtlar bozulmasın diye bunu da ekledim:
-        "Kişisel Gelişim" -> Icons.Rounded.LocalLibrary to Color(0xFF4ECDC4)
+        "Sağlık" -> Icons.Rounded.Favorite to ColorHealth
+        "Spor" -> Icons.Rounded.FitnessCenter to ColorSport
+        "Su İçmek" -> Icons.Rounded.WaterDrop to ColorWater
+        "Okuma" -> Icons.Rounded.LocalLibrary to ColorReading
+        "Finans" -> Icons.Rounded.MonetizationOn to ColorFinance
+        "Kişisel" -> Icons.Rounded.Face to ColorPersonal
+        "Yüzme" -> Icons.Rounded.Pool to ColorPool
+        "Meditasyon" -> Icons.Rounded.SelfImprovement to ColorMeditation
+        "Uyku" -> Icons.Rounded.Bedtime to ColorSleep
+        "Yürüyüş" -> Icons.Rounded.DirectionsWalk to ColorWalk
+        "Sosyal" -> Icons.Rounded.Groups to ColorSocial
+        "Yaratıcılık" -> Icons.Rounded.Brush to ColorCreative
+        "Kodlama" -> Icons.Rounded.Code to ColorCode
+        "Müzik" -> Icons.Rounded.MusicNote to ColorMusic
+        // Eski kayıtlar için destek
+        "Kişisel Gelişim" -> Icons.Rounded.LocalLibrary to ColorReading
         else -> Icons.Rounded.SelfImprovement to PrimaryOrange
     }
 

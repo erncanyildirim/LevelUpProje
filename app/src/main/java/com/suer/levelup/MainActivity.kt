@@ -1,8 +1,11 @@
 package com.suer.levelup
 
+import android.Manifest
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -17,8 +20,32 @@ import com.suer.levelup.ui.viewmodel.AuthViewModel
 import com.suer.levelup.ui.viewmodel.HabitViewModel
 
 class MainActivity : ComponentActivity() {
+
+    // Bildirim izni sonucunu dinleyen başlatıcı
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            // İzin verildi, bildirimler çalışacak
+        } else {
+            // İzin verilmedi, kullanıcıyı rahatsız etmemek için sessiz kalıyoruz
+            // İleride ayarlardan açması için uyarı gösterebilirsin.
+        }
+    }
+
+    // Android 13 (Tiramisu) ve üzeri için izin isteyen fonksiyon
+    private fun askNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Uygulama açılır açılmaz izin iste
+        askNotificationPermission()
+
         setContent {
             LevelUpTheme {
                 Surface(

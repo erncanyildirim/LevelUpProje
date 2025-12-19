@@ -3,7 +3,7 @@ package com.suer.levelup.ui.screens
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -33,11 +32,7 @@ import com.google.firebase.auth.GoogleAuthProvider
 import com.suer.levelup.R
 import com.suer.levelup.ui.viewmodel.AuthState
 import com.suer.levelup.ui.viewmodel.AuthViewModel
-
-// Renkler
-private val CreamBg = Color(0xFFFDFDF6)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val TextDark = Color(0xFF2D3436)
+import com.suer.levelup.ui.theme.* // <-- Renkler artık buradan geliyor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -109,7 +104,7 @@ fun LoginScreen(
             Text(
                 text = "Kaldığın yerden devam et",
                 fontSize = 16.sp,
-                color = Color.Gray
+                color = TextLight // Gri yerine temadaki TextLight kullanıldı
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -125,7 +120,9 @@ fun LoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryOrange,
                     focusedLabelColor = PrimaryOrange,
-                    cursorColor = PrimaryOrange
+                    cursorColor = PrimaryOrange,
+                    focusedTextColor = TextDark,
+                    unfocusedTextColor = TextDark
                 )
             )
 
@@ -139,7 +136,7 @@ fun LoginScreen(
                 leadingIcon = { Icon(Icons.Default.Lock, null, tint = PrimaryOrange) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                        Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null, tint = TextLight)
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -149,12 +146,15 @@ fun LoginScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryOrange,
                     focusedLabelColor = PrimaryOrange,
-                    cursorColor = PrimaryOrange
+                    cursorColor = PrimaryOrange,
+                    focusedTextColor = TextDark,
+                    unfocusedTextColor = TextDark
                 )
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Giriş Butonu
             Button(
                 onClick = { viewModel.login(email, password) },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
@@ -162,9 +162,9 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
             ) {
                 if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = SurfaceWhite, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Giriş Yap", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Giriş Yap", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SurfaceWhite)
                 }
             }
 
@@ -178,10 +178,8 @@ fun LoginScreen(
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray)
+                border = BorderStroke(1.dp, Color.LightGray) // Google butonu standart gri çerçeveli kalabilir
             ) {
-                // Eğer Google ikonu R.drawable.ic_google olarak yoksa buraya Image ekleyebilirsin
-                // Şimdilik sadece text bırakıyorum, istersen ikon ekleriz.
                 Text("Google ile Devam Et", color = TextDark, fontSize = 16.sp)
             }
 

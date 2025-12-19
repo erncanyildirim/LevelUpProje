@@ -13,8 +13,8 @@ android {
         applicationId = "com.suer.levelup"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.3"
+        versionCode = 4
+        versionName = "1.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -55,7 +55,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.firestore)
+    implementation("com.google.firebase:firebase-analytics-ktx:22.0.0")
     implementation("com.google.firebase:firebase-messaging-ktx:23.4.0")
+    implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.compose.material:material-icons-extended:1.7.5")
     implementation("com.google.android.gms:play-services-auth:21.0.0")
     implementation("androidx.navigation:navigation-compose:2.8.0")

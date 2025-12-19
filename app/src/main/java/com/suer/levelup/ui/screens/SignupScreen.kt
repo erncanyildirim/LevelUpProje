@@ -24,11 +24,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.suer.levelup.ui.viewmodel.AuthState
 import com.suer.levelup.ui.viewmodel.AuthViewModel
-
-// Renkler
-private val CreamBg = Color(0xFFFDFDF6)
-private val PrimaryOrange = Color(0xFFFF6F61)
-private val TextDark = Color(0xFF2D3436)
+import com.suer.levelup.ui.theme.* // <-- Renkler artık buradan geliyor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -81,7 +77,7 @@ fun SignupScreen(
             Text(
                 text = "Hemen ücretsiz hesabını oluştur",
                 fontSize = 16.sp,
-                color = Color.Gray
+                color = TextLight // Gri yerine temadaki TextLight kullanıldı
             )
 
             Spacer(modifier = Modifier.height(40.dp))
@@ -97,7 +93,9 @@ fun SignupScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryOrange,
                     focusedLabelColor = PrimaryOrange,
-                    cursorColor = PrimaryOrange
+                    cursorColor = PrimaryOrange,
+                    focusedTextColor = TextDark,
+                    unfocusedTextColor = TextDark
                 )
             )
 
@@ -111,7 +109,11 @@ fun SignupScreen(
                 leadingIcon = { Icon(Icons.Default.Lock, null, tint = PrimaryOrange) },
                 trailingIcon = {
                     IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                        Icon(
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            null,
+                            tint = TextLight
+                        )
                     }
                 },
                 visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -121,7 +123,9 @@ fun SignupScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryOrange,
                     focusedLabelColor = PrimaryOrange,
-                    cursorColor = PrimaryOrange
+                    cursorColor = PrimaryOrange,
+                    focusedTextColor = TextDark,
+                    unfocusedTextColor = TextDark
                 )
             )
 
@@ -135,7 +139,11 @@ fun SignupScreen(
                 leadingIcon = { Icon(Icons.Default.Lock, null, tint = PrimaryOrange) },
                 trailingIcon = {
                     IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
-                        Icon(if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff, null)
+                        Icon(
+                            if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            null,
+                            tint = TextLight
+                        )
                     }
                 },
                 visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
@@ -145,22 +153,27 @@ fun SignupScreen(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryOrange,
                     focusedLabelColor = PrimaryOrange,
-                    cursorColor = PrimaryOrange
+                    cursorColor = PrimaryOrange,
+                    focusedTextColor = TextDark,
+                    unfocusedTextColor = TextDark
                 )
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            // Kayıt Ol Butonu
             Button(
                 onClick = { viewModel.signup(email, password, confirmPassword) },
-                modifier = Modifier.fillMaxWidth().height(56.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryOrange)
             ) {
                 if (authState is AuthState.Loading) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = SurfaceWhite, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Kayıt Ol", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                    Text("Kayıt Ol", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = SurfaceWhite)
                 }
             }
 
